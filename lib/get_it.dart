@@ -429,12 +429,16 @@ abstract class GetIt {
   /// As dispose functions can be async, you should await this function.
   Future<void> popScope();
 
+  void popScopeSync();
+
   /// if you have a lot of scopes with names you can pop (see [popScope]) all
   /// scopes above the scope with [name] including that scope unless [inclusive]= false
   /// Scopes are popped in order from the top
   /// As dispose functions can be async, you should await this function.
   /// If no scope with [name] exists, nothing is popped and `false` is returned
   Future<bool> popScopesTill(String name, {bool inclusive = true});
+
+  bool popScopesTillSync(String name, {bool inclusive = true});
 
   /// Disposes all registered factories and singletons in the provided scope
   /// (in the reverse order in which they were registered),

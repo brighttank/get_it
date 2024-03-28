@@ -328,6 +328,7 @@ class _Scope {
   final String? name;
   final ScopeDisposeFunc? disposeFunc;
   bool isFinal = false;
+
   // ignore: prefer_collection_literals
   final typeRegistrations =
       // ignore: prefer_collection_literals
@@ -927,6 +928,23 @@ class _GetItImplementation implements GetIt {
     onScopeChanged?.call(false);
   }
 
+  @override
+  void popScopeSync() {
+    throwIfNot(
+      _scopes.length > 1,
+      StateError(
+        "GetIt: You are already on the base scope. you can't pop this one",
+      ),
+    );
+    // make sure that nothing new can be registered in this scope
+    // while the scopes async dispose functions are running
+    _currentScope.isFinal = true;
+    _currentScope.dispose();
+    _currentScope.reset(dispose: true);
+    _scopes.removeLast();
+    onScopeChanged?.call(false);
+  }
+
   /// if you have a lot of scopes with names you can pop (see [popScope]) all scopes above
   /// the scope with [scopeName] including that scope
   /// Scopes are popped in order from the top
@@ -944,6 +962,26 @@ class _GetItImplementation implements GetIt {
     do {
       poppedScopeName = _currentScope.name;
       await popScope();
+    } while (inclusive
+        ? (poppedScopeName != scopeName)
+        : (_currentScope.name != scopeName));
+    onScopeChanged?.call(false);
+    return true;
+  }
+
+  @override
+  bool popScopesTillSync(String scopeName, {bool inclusive = true}) {
+    assert(
+      scopeName != _baseScopeName || !inclusive,
+      "You can't pop the base scope",
+    );
+    if (_scopes.firstWhereOrNull((x) => x.name == scopeName) == null) {
+      return false;
+    }
+    String? poppedScopeName;
+    do {
+      poppedScopeName = _currentScope.name;
+      popScopeSync();
     } while (inclusive
         ? (poppedScopeName != scopeName)
         : (_currentScope.name != scopeName));
